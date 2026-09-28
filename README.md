@@ -1,6 +1,10 @@
 # Ethic QR Scanner
 
-Ethic QR Scanner is an original Android QR and barcode scanner built around a
+[![Get it on F-Droid](https://fdroid.gitlab.io/artwork/badge/get-it-on.png)](https://f-droid.org/packages/org.jpi59.ethicqrscanner/)
+[![F-Droid Version](https://img.shields.io/f-droid/v/org.jpi59.ethicqrscanner?logo=f-droid&logoColor=white&label=F-Droid)](https://f-droid.org/packages/org.jpi59.ethicqrscanner/)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/License-GPL--3.0--or--later-blue.svg)](LICENSE)
+
+Ethic QR Scanner is an original Android QR and barcode scanner by [IDEH Labs](https://ideh.top/), built around a
 simple rule: decoding a code must not silently trigger an external action.
 
 It scans using the device camera, decodes locally, and presents the result for
@@ -52,14 +56,6 @@ another project in the workspace:
 ./gradlew :app:assembleRelease :app:lintVitalRelease
 ```
 
-Version `1.0.1` has a [production-signed APK and SHA-256 checksum on its GitHub
-release](https://github.com/jpi59/ethic-qr-scanner/releases/tag/v1.0.3). Version
-`1.0.2` is pending verification and release. F-Droid
-builds and signs its own artifacts from the published source and metadata, so a
-future F-Droid APK will use a different signature.
+Version `1.0.3` is officially published and verified in the [F-Droid main repository](https://f-droid.org/packages/org.jpi59.ethicqrscanner/).
 
-## Status
-
-The source and the signed direct release are public. A local build or a GitHub
-release does not imply F-Droid acceptance; maintainers must review licensing,
-dependencies, metadata and reproducibility before catalog publication.
+Production-signed APKs and SHA-256 checksums are also available on [GitHub Releases](https://github.com/IDEH-Labs/ethic-qr-scanner/releases).
