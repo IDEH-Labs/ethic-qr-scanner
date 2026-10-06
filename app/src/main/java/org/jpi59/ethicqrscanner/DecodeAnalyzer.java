@@ -4,20 +4,6 @@ import androidx.annotation.NonNull;
 import androidx.camera.core.ImageAnalysis;
 import androidx.camera.core.ImageProxy;
 
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.DecodeHintType;
-import com.google.zxing.MultiFormatReader;
-import com.google.zxing.PlanarYUVLuminanceSource;
-import com.google.zxing.Result;
-import com.google.zxing.LuminanceSource;
-import com.google.zxing.common.GlobalHistogramBinarizer;
-import com.google.zxing.common.HybridBinarizer;
-
-import java.nio.ByteBuffer;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /** Decodes the luminance plane locally; no image is written to storage or transmitted. */
@@ -26,16 +12,9 @@ final class DecodeAnalyzer implements ImageAnalysis.Analyzer {
 
     private final Callback callback;
     private final AtomicBoolean paused = new AtomicBoolean(false);
-    private final Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
 
     DecodeAnalyzer(Callback callback) {
         this.callback = callback;
-        hints.put(DecodeHintType.POSSIBLE_FORMATS, EnumSet.of(
-                BarcodeFormat.QR_CODE, BarcodeFormat.AZTEC, BarcodeFormat.DATA_MATRIX,
-                BarcodeFormat.PDF_417, BarcodeFormat.CODE_128, BarcodeFormat.CODE_39,
-                BarcodeFormat.CODE_93, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8,
-                BarcodeFormat.UPC_A, BarcodeFormat.UPC_E, BarcodeFormat.ITF));
-        hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
     }
 
     void pause() { paused.set(true); }
@@ -43,45 +22,22 @@ final class DecodeAnalyzer implements ImageAnalysis.Analyzer {
 
     @Override
     public void analyze(@NonNull ImageProxy image) {
-        if (paused.get()) {
-            image.close();
-            return;
-        }
         try {
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            byte[] luma = new byte[buffer.remaining()];
-            buffer.get(luma);
-            int rowStride = image.getPlanes()[0].getRowStride();
-            PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(
-                    luma, rowStride, image.getHeight(), 0, 0,
-                    image.getWidth(), image.getHeight(), false);
-            Result result = decode(source);
-            int rotation = image.getImageInfo().getRotationDegrees();
-            if (result == null && rotation == 90) result = decode(source.rotateCounterClockwise());
-            if (result == null && rotation == 180) result = decode(source.rotateCounterClockwise().rotateCounterClockwise());
-            if (result == null && rotation == 270) {
-                result = decode(source.rotateCounterClockwise().rotateCounterClockwise()
-                        .rotateCounterClockwise());
+            if (paused.get()) return;
+            ImageProxy.PlaneProxy plane = image.getPlanes()[0];
+            int width = image.getWidth();
+            int height = image.getHeight();
+            byte[] luma = CodeDecoder.compactPlane(plane.getBuffer(), plane.getRowStride(), width, height);
+            // Both orientations are always tried, so the result does not depend
+            // on how the phone is held relative to the camera sensor.
+            String text = CodeDecoder.decode(luma, width, height);
+            if (text != null && paused.compareAndSet(false, true)) {
+                callback.onDecoded(text);
             }
-            if (result != null && result.getText() != null && paused.compareAndSet(false, true)) {
-                callback.onDecoded(result.getText());
-            }
-        } catch (Exception ignored) {
-            // Most camera frames do not contain a code. This is expected.
+        } catch (RuntimeException unexpected) {
+            // A malformed frame must not stop the scanner; the next frame is tried.
         } finally {
             image.close();
-        }
-    }
-
-    private Result decode(LuminanceSource source) {
-        try {
-            return new MultiFormatReader().decode(new BinaryBitmap(new HybridBinarizer(source)), hints);
-        } catch (Exception first) {
-            try {
-                return new MultiFormatReader().decode(new BinaryBitmap(new GlobalHistogramBinarizer(source)), hints);
-            } catch (Exception second) {
-                return null;
-            }
         }
     }
 }

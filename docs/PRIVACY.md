@@ -25,6 +25,25 @@ not claim to determine whether a link is safe, does not query reputation
 services, and does not open it automatically. The final decision belongs to the
 person using the device.
 
+Before a link can be offered for opening, an offline syntactic review
+(`LinkSafety`) runs on the device:
+
+- The confirmation names the host the browser will contact, in the ASCII form
+  browsers use. An international (IDN) or `xn--` host is also shown as written
+  and flagged, because its letters can imitate a well-known site.
+- Text before an `@`, a numeric (IP) host and plain HTTP are flagged.
+- A link stays copy-only when it is longer than 2,048 characters or contains a
+  backslash, whitespace, invisible or text-direction characters, a
+  percent-encoded host, or letters (`ß`, `ς`) that IDNA2003 and browsers convert
+  differently. In each case the host shown could differ from the one contacted.
+
+Invisible and text-direction characters in any decoded content are displayed as
+`⟨U+XXXX⟩` markers; Copy keeps the exact original payload. This review cannot
+detect look-alike names written only in ASCII (for example `paypa1.com`).
+
+Rotating the device keeps a result under review without recreating the
+activity; decoded content is not written to Android's saved-instance state.
+
 ## Permission
 
 `android.permission.CAMERA` is required only to use the scanning feature. It

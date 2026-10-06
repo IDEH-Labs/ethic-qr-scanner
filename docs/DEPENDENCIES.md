@@ -25,3 +25,11 @@ Apache License 2.0 is compatible with GPLv3. The application itself is offered
 under GPL-3.0-or-later; this does not erase upstream copyright, notice or
 licence obligations. Any dependency change requires a fresh resolved-graph and
 licence review before a new release.
+
+## Test-only dependency
+
+| Dependency | Version declared | Licence | Use |
+| --- | --- | --- | --- |
+| `junit:junit` | `4.13.2` | EPL-1.0 | JVM unit tests (`testImplementation`) |
+
+It is used only to run the unit tests and is not packaged in the APK.

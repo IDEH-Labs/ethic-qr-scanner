@@ -22,6 +22,31 @@
     <string name="transparency_dialog_title">About and privacy</string>
     <string name="transparency_dialog_message">Permission: CAMERA is requested when the scanner opens because it is required for the main function.\n\nData: frames and decoded content stay in memory on this phone. There is no account, tracking, advertising, network permission, or scan history.\n\nLinks: an HTTP(S) link is shown as inactive text. Opening it requires a separate confirmation that displays the full destination. The app does not claim to verify a website’s safety.\n\nLicensing: original app code is GPL-3.0-or-later. CameraX/AndroidX and ZXing Core are credited in the source notices.</string>
 
+    <!-- Scanner -->
+    <string name="scanner_brand">ETHIC QR SCANNER</string>
+    <string name="close_camera">Close camera</string>
+    <string name="toggle_torch">Turn the rear camera light on or off</string>
+    <string name="choose_photo">Choose a saved photo to read a code</string>
+    <string name="camera_start_failed">The camera could not be started.</string>
+    <string name="no_torch">This camera has no light.</string>
+    <string name="clipboard_label">Scanned code</string>
+    <string name="copied">Copied on this device.</string>
+    <string name="no_browser">No browser is available.</string>
+    <string name="photo_unreadable_title">Photo could not be read</string>
+    <string name="photo_unreadable_message">The selected image could not be opened or is too large to process on this device. Nothing was saved.</string>
+    <string name="unknown_value">Not available</string>
+    <string name="no_app_to_open">No app on this device can open it.</string>
+
+    <!-- Untrusted content review -->
+    <string name="link_not_openable_message">This looks like a web link, but it cannot be opened from this app: it is too long to review, or it contains elements that could hide its real destination. You can still copy it.</string>
+    <string name="hidden_characters_notice">This content contains invisible or text-direction characters that could make it look different from what it is. They are shown as ⟨U+…⟩ markers; Copy keeps the original content.</string>
+    <string name="link_host_label">Website the browser will contact:\n%1$s</string>
+    <string name="link_written_as">Written in the code as: %1$s</string>
+    <string name="concern_plain_http">This link uses HTTP, so the connection will not be encrypted.</string>
+    <string name="concern_text_before_at">The link contains text before an “@”. That text is not the destination: the browser will contact the website shown above.</string>
+    <string name="concern_international_host">The website name contains non-Latin or accented letters. Some imitate the letters of well-known sites; compare the form shown above with the site you expect.</string>
+    <string name="concern_numeric_host">The destination is a numeric address rather than a website name.</string>
+
     <!-- Menu & Projects -->
     <string name="menu_title">About us</string>
     <string name="ecosystem_section">Projects</string>

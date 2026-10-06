@@ -21,8 +21,13 @@ Android is asked to open a browser.
   memory without storage permission and is not saved by the app.
 - Frames are decoded in memory and are not saved or transmitted.
 - A decoded HTTP(S) link is never made tappable inline. The app can delegate
-  only URLs up to 2,048 characters after an explicit confirmation; longer or
-  other payloads remain available to copy, not to open from the app.
+  only URLs up to 2,048 characters after an explicit confirmation that names
+  the host the browser will contact and flags look-alike (international),
+  numeric, `@`-prefixed and unencrypted links. Links that could hide their real
+  destination, longer links and other payloads remain available to copy, not to
+  open from the app. See [docs/PRIVACY.md](docs/PRIVACY.md#safety-boundary).
+- Invisible and text-direction characters in decoded content are shown as
+  visible markers instead of silently altering what is displayed.
 - No scan history is included in version 1.0.3.
 - Copying a result uses Android's local clipboard service; the system may expose
   clipboard data to the current keyboard or other system components according

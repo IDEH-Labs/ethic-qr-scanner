@@ -3,6 +3,7 @@ package org.jpi59.ethicqrscanner;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -23,6 +24,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.security.MessageDigest;
 import java.util.Locale;
@@ -162,14 +164,8 @@ public final class EthicEcosystemMenu {
                 actionBtn.setBackground(roundedBackground(Color.TRANSPARENT, action, 14, activity.getResources().getDisplayMetrics().density));
             }
             actionBtn.setPadding(dp(activity, 12), dp(activity, 4), dp(activity, 12), dp(activity, 4));
-            actionBtn.setOnClickListener(v -> {
-                if (isInstalled) {
-                    activity.startActivity(launchIntent);
-                } else {
-                    Intent browseIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                    activity.startActivity(browseIntent);
-                }
-            });
+            actionBtn.setOnClickListener(v -> startSafely(activity, isInstalled
+                    ? launchIntent : new Intent(Intent.ACTION_VIEW, Uri.parse(url))));
             LinearLayout.LayoutParams btnParams = new LinearLayout.LayoutParams(-2, dp(activity, 36));
             btnParams.setMarginStart(dp(activity, 8));
             appRow.addView(actionBtn, btnParams);
@@ -186,7 +182,7 @@ public final class EthicEcosystemMenu {
                 activity.getString(R.string.github_repo_label),
                 "github.com/IDEH-Labs/ethic-qr-scanner",
                 ink, muted, action,
-                v -> activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/IDEH-Labs/ethic-qr-scanner")))
+                v -> startSafely(activity, new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/IDEH-Labs/ethic-qr-scanner")))
         ));
         repoCard.addView(createDivider(activity, cardStroke));
         repoCard.addView(createActionRow(
@@ -195,7 +191,7 @@ public final class EthicEcosystemMenu {
                 activity.getString(R.string.gitlab_repo_label),
                 "gitlab.com/ideh-labs/ethic-qr-scanner",
                 ink, muted, action,
-                v -> activity.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitlab.com/ideh-labs/ethic-qr-scanner")))
+                v -> startSafely(activity, new Intent(Intent.ACTION_VIEW, Uri.parse("https://gitlab.com/ideh-labs/ethic-qr-scanner")))
         ));
         repoCard.addView(createDivider(activity, cardStroke));
         repoCard.addView(createActionRow(
@@ -262,7 +258,7 @@ public final class EthicEcosystemMenu {
         try {
             return context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
         } catch (Exception ignored) {
-            return "1.0.0";
+            return context.getString(R.string.unknown_value);
         }
     }
 
@@ -289,7 +285,16 @@ public final class EthicEcosystemMenu {
                 return sb.toString();
             }
         } catch (Exception ignored) { }
-        return "No disponible";
+        return context.getString(R.string.unknown_value);
+    }
+
+    /** Opens another app or the browser; a missing handler must not crash the scanner. */
+    private static void startSafely(Activity activity, Intent intent) {
+        try {
+            activity.startActivity(intent);
+        } catch (ActivityNotFoundException | SecurityException unavailable) {
+            Toast.makeText(activity, R.string.no_app_to_open, Toast.LENGTH_LONG).show();
+        }
     }
 
     private static TextView createSectionHeader(Context ctx, String text, int color) {

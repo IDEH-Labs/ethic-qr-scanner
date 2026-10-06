@@ -15,4 +15,5 @@ cache:
 android-verify:
   stage: verify
   script:
+    - bash scripts/verify-privacy.sh
     - ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleRelease :app:lintVitalRelease

@@ -22,6 +22,31 @@
     <string name="transparency_dialog_title">Información y privacidad</string>
     <string name="transparency_dialog_message">Permiso: CAMERA se solicita al abrir el escáner porque es necesario para su función principal.\n\nDatos: las imágenes y el contenido detectado permanecen en memoria en este teléfono. No hay cuenta, rastreo, anuncios, permiso de red ni historial de escaneos.\n\nEnlaces: un enlace HTTP(S) se muestra como texto inactivo. Para abrirlo hay que confirmar aparte tras ver el destino completo. La app no afirma verificar la seguridad del sitio.\n\nLicencia: el código original está bajo GPL-3.0-or-later. CameraX/AndroidX y ZXing Core aparecen atribuidos en los avisos del código fuente.</string>
 
+    <!-- Escáner -->
+    <string name="scanner_brand">ETHIC QR SCANNER</string>
+    <string name="close_camera">Cerrar cámara</string>
+    <string name="toggle_torch">Encender o apagar la luz de la cámara trasera</string>
+    <string name="choose_photo">Elegir una foto guardada para leer un código</string>
+    <string name="camera_start_failed">No fue posible iniciar la cámara.</string>
+    <string name="no_torch">Esta cámara no tiene luz auxiliar.</string>
+    <string name="clipboard_label">Código escaneado</string>
+    <string name="copied">Copiado en este dispositivo.</string>
+    <string name="no_browser">No hay un navegador disponible.</string>
+    <string name="photo_unreadable_title">No se pudo leer la foto</string>
+    <string name="photo_unreadable_message">La imagen seleccionada no se pudo abrir o es demasiado grande para procesarla en este dispositivo. No se guardó nada.</string>
+    <string name="unknown_value">No disponible</string>
+    <string name="no_app_to_open">Ninguna app de este dispositivo puede abrirlo.</string>
+
+    <!-- Revisión de contenido no confiable -->
+    <string name="link_not_openable_message">Parece un enlace web, pero no se puede abrir desde esta app: es demasiado largo para revisarlo o contiene elementos que podrían ocultar su destino real. Aún puedes copiarlo.</string>
+    <string name="hidden_characters_notice">Este contenido incluye caracteres invisibles o de dirección de texto que podrían hacer que parezca distinto de lo que es. Se muestran como marcas ⟨U+…⟩; Copiar conserva el contenido original.</string>
+    <string name="link_host_label">Sitio web al que se conectará el navegador:\n%1$s</string>
+    <string name="link_written_as">Escrito en el código como: %1$s</string>
+    <string name="concern_plain_http">Este enlace usa HTTP, así que la conexión no estará cifrada.</string>
+    <string name="concern_text_before_at">El enlace contiene texto antes de una «@». Ese texto no es el destino: el navegador se conectará al sitio mostrado arriba.</string>
+    <string name="concern_international_host">El nombre del sitio contiene letras no latinas o acentuadas. Algunas imitan las letras de sitios conocidos; compara la forma mostrada arriba con el sitio que esperas.</string>
+    <string name="concern_numeric_host">El destino es una dirección numérica en lugar de un nombre de sitio web.</string>
+
     <!-- Menú y Proyectos -->
     <string name="menu_title">Acerca de nosotros</string>
     <string name="ecosystem_section">Proyectos</string>
