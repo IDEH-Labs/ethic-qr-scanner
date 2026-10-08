@@ -1,1 +1,1 @@
-Un escáner de códigos QR y de barras sin conexión que nunca abre enlaces automáticamente.
+Lector offline de QR y códigos de barras. Jamás abre enlaces automáticamente.

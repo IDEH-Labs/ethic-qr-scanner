@@ -7,6 +7,16 @@
         tools:node="remove" />
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
 
+        <queries>
+        <package android:name="org.jpi59.ethicnotes" />
+        <package android:name="org.jpi59.ethiccompass" />
+        <package android:name="org.jpi59.ethicqrscanner" />
+        <package android:name="org.jpi59.teclado" />
+        <package android:name="org.jpi59.ethictuner" />
+        <package android:name="org.jpi59.ethicupdatesafe" />
+        <package android:name="org.jpi59.ethichandoff" />
+        <package android:name="org.senda.browser" />
+    </queries>
     <application
         android:allowBackup="false"
         android:icon="@drawable/ic_ethic_qr_scanner"

@@ -1,12 +1,46 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/apk/res-auto"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#123B4A" android:pathData="M54,4A50,50 0,1 0,54,104A50,50 0,1 0,54,4" />
-    <path android:fillColor="#F7F8F5" android:pathData="M25,25L48,25L48,48L25,48ZM31,31L31,42L42,42L42,31Z" />
-    <path android:fillColor="#F7F8F5" android:pathData="M60,25L83,25L83,48L60,48ZM66,31L66,42L77,42L77,31Z" />
-    <path android:fillColor="#F7F8F5" android:pathData="M25,60L48,60L48,83L25,83ZM31,66L31,77L42,77L42,66Z" />
-    <path android:fillColor="#F7F8F5" android:pathData="M60,60L68,60L68,68L76,68L76,60L83,60L83,76L76,76L76,83L60,83Z" />
-    <path android:fillColor="#6ED3B7" android:pathData="M70,70L83,70L83,83L70,83Z" />
+    <path android:pathData="M54,4A50,50 0,1 0,54,104A50,50 0,1 0,54,4">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="15"
+                android:startY="15"
+                android:endX="95"
+                android:endY="95"
+                android:type="linear">
+                <item android:offset="0.0" android:color="#38BDF8" />
+                <item android:offset="1.0" android:color="#1D4ED8" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Viewfinder Brackets -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M30,38 L30,33 A3,3 0,0 1,33 30 L38,30 M70,30 L75,30 A3,3 0,0 1,78 33 L78,38 M30,70 L30,75 A3,3 0,0 0,33 78 L38,78 M78,70 L78,75 A3,3 0,0 1,75 78 L70,78" />
+    <!-- QR Corner Targets -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:fillColor="#00000000"
+        android:pathData="M38,38 L50,38 L50,50 L38,50 Z M58,38 L70,38 L70,50 L58,50 Z M38,58 L50,58 L50,70 L38,70 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,42h4v4h-4z M62,42h4v4h-4z M42,62h4v4h-4z" />
+    <!-- Data points & scan laser -->
+    <path
+        android:fillColor="#BAE6FD"
+        android:pathData="M58,58h4v4h-4z M66,66h4v4h-4z" />
+    <path
+        android:strokeColor="#BAE6FD"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M32,54 L76,54" />
 </vector>
