@@ -58,4 +58,4 @@ another project in the workspace:
 
 Version `1.0.3` is officially published and verified in the [F-Droid main repository](https://f-droid.org/packages/org.jpi59.ethicqrscanner/).
 
-Production-signed APKs and SHA-256 checksums are also available on [GitHub Releases](https://github.com/IDEH-Labs/ethic-qr-scanner/releases).
+Production-signed APKs and SHA-256 checksums are also available on [Codeberg Releases](https://codeberg.org/IDEH-Labs/ethic-qr-scanner/releases) (mirrored on [GitHub Releases](https://github.com/IDEH-Labs/ethic-qr-scanner/releases)).
