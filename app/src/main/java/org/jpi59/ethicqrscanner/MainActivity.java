@@ -6,6 +6,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -14,18 +15,23 @@ import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.text.BidiFormatter;
+import android.text.TextDirectionHeuristics;
+import android.text.TextUtils;
 import android.view.Gravity;
-import android.view.Surface;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.text.Layout;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -42,17 +48,14 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.zxing.BinaryBitmap;
-import com.google.zxing.MultiFormatReader;
-import com.google.zxing.RGBLuminanceSource;
-import com.google.zxing.common.HybridBinarizer;
 
 /**
  * A local-only QR and barcode scanner. Decoded text is never sent to a service
  * and web links are never opened without an explicit, informed confirmation.
  */
 public final class MainActivity extends androidx.activity.ComponentActivity {
-    private static final int PADDING = 24;
+    private static final int MAX_DISPLAYED_CHARS = 4000;
+    private static final int MAX_PHOTO_SIDE = 1600;
 
     private final ActivityResultLauncher<String> cameraPermission = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), granted -> {
@@ -67,11 +70,13 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
 
     private FrameLayout root;
     private PreviewView previewView;
+    private Preview preview;
     private ImageAnalysis analysis;
     private Camera camera;
     private DecodeAnalyzer decoder;
     private TorchButtonView torchButton;
     private PhotoButtonView photoButton;
+    private AlertDialog activeDialog;
     private final ExecutorService analysisExecutor = Executors.newSingleThreadExecutor();
 
     @Override
@@ -84,143 +89,113 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
         requestCameraForScanning();
     }
 
-    private void showHome() {
-        if (analysis != null || camera != null) stopCamera();
-        root = new FrameLayout(this);
-        root.setBackgroundColor(color(R.color.night));
-        root.addView(new AmbientBackground(this));
-
-        LinearLayout content = new LinearLayout(this);
-        content.setOrientation(LinearLayout.VERTICAL);
-        content.setPadding(dp(PADDING), dp(38), dp(PADDING), dp(PADDING));
-        root.addView(content, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
-        LinearLayout topBar = new LinearLayout(this);
-        topBar.setOrientation(LinearLayout.HORIZONTAL);
-        topBar.setGravity(Gravity.CENTER_VERTICAL);
-
-        android.widget.ImageButton btnMenu = new android.widget.ImageButton(this);
-        btnMenu.setImageResource(R.drawable.ic_settings_menu);
-        btnMenu.setBackground(null);
-        btnMenu.setColorFilter(color(R.color.teal));
-        btnMenu.setContentDescription(getString(R.string.menu_title));
-        btnMenu.setOnClickListener(v -> EthicEcosystemMenu.show(this, true));
-        topBar.addView(btnMenu, new LinearLayout.LayoutParams(dp(44), dp(44)));
-
-        TextView eyebrow = text("ETHIC  /  LOCAL ONLY", 12, color(R.color.teal));
-        eyebrow.setLetterSpacing(0.14f);
-        LinearLayout.LayoutParams eyebrowParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        eyebrowParams.setMarginStart(dp(8));
-        topBar.addView(eyebrow, eyebrowParams);
-        content.addView(topBar);
-
-        TextView title = text("QR Scanner", 45, Color.WHITE);
-        title.setPadding(0, dp(8), 0, 0);
-        content.addView(title);
-
-        TextView subtitle = text("Lee un código. Decide con calma qué hacer después.", 18, color(R.color.mist));
-        subtitle.setPadding(0, dp(12), 0, 0);
-        content.addView(subtitle);
-
-        View spacer = new View(this);
-        content.addView(spacer, new LinearLayout.LayoutParams(1, 0, 1));
-
-        LinearLayout assurance = panel();
-        assurance.setOrientation(LinearLayout.VERTICAL);
-        assurance.setPadding(dp(20), dp(18), dp(20), dp(18));
-        TextView assuranceTitle = text("Privacidad visible", 17, Color.WHITE);
-        TextView assuranceBody = text("Sin cuenta. Sin anuncios. Sin red. La cámara solo se activa cuando tocas escanear.", 15, color(R.color.mist));
-        assuranceBody.setPadding(0, dp(7), 0, 0);
-        assurance.addView(assuranceTitle);
-        assurance.addView(assuranceBody);
-        content.addView(assurance, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-        Button transparency = button("Transparencia", Color.TRANSPARENT, color(R.color.teal));
-        transparency.setOnClickListener(v -> showTransparency());
-        LinearLayout.LayoutParams transparencyParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(46));
-        transparencyParams.topMargin = dp(8);
-        content.addView(transparency, transparencyParams);
-
-        Button scan = button("Escanear código", color(R.color.teal), color(R.color.ink));
-        scan.setOnClickListener(v -> requestCameraForScanning());
-        LinearLayout.LayoutParams scanParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(58));
-        scanParams.topMargin = dp(18);
-        content.addView(scan, scanParams);
-
-        Button photo = button("Cargar foto", Color.TRANSPARENT, color(R.color.teal));
-        photo.setOnClickListener(v -> photoPicker.launch("image/*"));
-        LinearLayout.LayoutParams photoParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
-        photoParams.topMargin = dp(6);
-        content.addView(photo, photoParams);
-
-        TextView footer = text("Los enlaces nunca se abren automáticamente.", 13, color(R.color.muted));
-        footer.setGravity(Gravity.CENTER);
-        footer.setPadding(0, dp(17), 0, 0);
-        content.addView(footer);
-        setContentView(root);
+    /**
+     * Rotation and window resizing are handled here (see android:configChanges)
+     * so that a decoded result being reviewed is not lost. The decoded content
+     * is deliberately never written to the saved-instance-state bundle.
+     */
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        int rotation = displayRotation();
+        if (preview != null) preview.setTargetRotation(rotation);
+        if (analysis != null) analysis.setTargetRotation(rotation);
+        if (activeDialog != null && activeDialog.isShowing()) fitDialogWidth(activeDialog);
     }
 
     private void showPermissionMessage() {
-        new AlertDialog.Builder(this)
+        track(new AlertDialog.Builder(this)
                 .setTitle(R.string.permission_needed)
                 .setMessage(R.string.camera_permission_explanation)
                 .setNegativeButton(R.string.close, (dialog, which) -> finish())
                 .setPositiveButton(R.string.retry_camera, (dialog, which) -> requestCameraForScanning())
                 .setOnCancelListener(dialog -> finish())
-                .show();
+                .show());
     }
 
     private void showTransparency() {
-        new AlertDialog.Builder(this)
+        track(new AlertDialog.Builder(this)
                 .setTitle(R.string.transparency_dialog_title)
                 .setMessage(R.string.transparency_dialog_message)
                 .setPositiveButton(android.R.string.ok, null)
-                .show();
+                .show());
     }
 
     private void decodePhoto(Uri uri) {
         if (uri == null) return;
+        // Stop live decoding so that a camera result cannot appear over the photo result.
+        if (decoder != null) decoder.pause();
         Toast.makeText(this, getString(R.string.reading_photo), Toast.LENGTH_SHORT).show();
         analysisExecutor.execute(() -> {
             String decoded = null;
+            boolean readable = false;
             try {
-                Bitmap original = BitmapFactory.decodeStream(getContentResolver().openInputStream(uri));
-                if (original != null) {
-                    int max = 1600;
-                    float scale = Math.min(1f, max / (float) Math.max(original.getWidth(), original.getHeight()));
-                    Bitmap bitmap = scale < 1f ? Bitmap.createScaledBitmap(original,
-                            Math.round(original.getWidth() * scale), Math.round(original.getHeight() * scale), true) : original;
+                Bitmap bitmap = loadBoundedBitmap(uri);
+                if (bitmap != null) {
+                    readable = true;
                     int width = bitmap.getWidth();
                     int height = bitmap.getHeight();
                     int[] pixels = new int[width * height];
                     bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
-                    RGBLuminanceSource source = new RGBLuminanceSource(width, height, pixels);
-                    decoded = new MultiFormatReader().decode(
-                            new BinaryBitmap(new HybridBinarizer(source))).getText();
-                    if (bitmap != original) bitmap.recycle();
-                    original.recycle();
+                    bitmap.recycle();
+                    decoded = CodeDecoder.decode(CodeDecoder.lumaFromArgb(pixels), width, height);
                 }
-            } catch (Exception ignored) {
-                // An image without a supported code is reported in the UI below.
+            } catch (IOException | RuntimeException | OutOfMemoryError failure) {
+                // Unreadable, revoked or oversized images are reported below. The
+                // OutOfMemoryError is recoverable here: every reference to the
+                // image is local to this block and is released when it exits.
+                readable = false;
             }
             String result = decoded;
+            boolean photoReadable = readable;
             runOnUiThread(() -> {
-                if (result == null || result.isEmpty()) {
-                    new AlertDialog.Builder(this)
-                            .setTitle(R.string.no_code_title)
-                            .setMessage(R.string.no_code_message)
-                            .setPositiveButton(android.R.string.ok, null)
-                            .show();
-                } else {
+                if (isFinishing() || isDestroyed()) return;
+                if (result != null && !result.isEmpty()) {
                     showResult(result);
+                    return;
                 }
+                AlertDialog dialog = new AlertDialog.Builder(this)
+                        .setTitle(photoReadable ? R.string.no_code_title : R.string.photo_unreadable_title)
+                        .setMessage(photoReadable ? R.string.no_code_message : R.string.photo_unreadable_message)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .create();
+                dialog.setOnDismissListener(ignored -> resumeScanning());
+                track(dialog);
+                dialog.show();
             });
         });
+    }
+
+    /**
+     * Decodes the picked image subsampled at load time, so a very large photo
+     * is never held in memory at full resolution. The stream is always closed.
+     */
+    private Bitmap loadBoundedBitmap(Uri uri) throws IOException {
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        try (InputStream in = getContentResolver().openInputStream(uri)) {
+            if (in == null) return null;
+            BitmapFactory.decodeStream(in, null, bounds);
+        }
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null;
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = CodeDecoder.sampleSizeFor(bounds.outWidth, bounds.outHeight, MAX_PHOTO_SIDE);
+        Bitmap sampled;
+        try (InputStream in = getContentResolver().openInputStream(uri)) {
+            if (in == null) return null;
+            sampled = BitmapFactory.decodeStream(in, null, options);
+        }
+        if (sampled == null) return null;
+
+        int width = sampled.getWidth();
+        int height = sampled.getHeight();
+        float scale = Math.min(1f, MAX_PHOTO_SIDE / (float) Math.max(width, height));
+        if (scale >= 1f) return sampled;
+        Bitmap scaled = Bitmap.createScaledBitmap(sampled,
+                Math.max(1, Math.round(width * scale)), Math.max(1, Math.round(height * scale)), true);
+        if (scaled != sampled) sampled.recycle();
+        return scaled;
     }
 
     private void requestCameraForScanning() {
@@ -248,10 +223,21 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
 
         LinearLayout header = new LinearLayout(this);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setPadding(dp(20), dp(14), dp(20), dp(14));
+        header.setPadding(dp(8), dp(14), dp(20), dp(14));
         header.setBackgroundColor(0xCC0C1C20);
-        TextView brand = text("ETHIC QR SCANNER", 15, Color.WHITE);
+        ImageButton menu = new ImageButton(this);
+        menu.setImageResource(R.drawable.ic_settings_menu);
+        menu.setBackground(null);
+        menu.setColorFilter(color(R.color.teal));
+        menu.setContentDescription(getString(R.string.menu_title));
+        menu.setOnClickListener(v -> EthicEcosystemMenu.show(this, true));
+        LinearLayout.LayoutParams menuParams = new LinearLayout.LayoutParams(dp(48), dp(48));
+        menuParams.setMarginEnd(dp(4));
+        header.addView(menu, menuParams);
+        TextView brand = text(getString(R.string.scanner_brand), 15, Color.WHITE);
         brand.setLetterSpacing(0.1f);
+        brand.setMaxLines(1);
+        brand.setEllipsize(TextUtils.TruncateAt.END);
         header.addView(brand, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         Button info = button("ⓘ", Color.TRANSPARENT, color(R.color.teal));
         info.setTextSize(22);
@@ -260,7 +246,7 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
         header.addView(info, new LinearLayout.LayoutParams(dp(48), dp(48)));
         Button close = button("×", Color.TRANSPARENT, Color.WHITE);
         close.setTextSize(30);
-        close.setContentDescription("Cerrar cámara");
+        close.setContentDescription(getString(R.string.close_camera));
         close.setPadding(dp(10), 0, dp(10), 0);
         close.setOnClickListener(v -> finish());
         header.addView(close, new LinearLayout.LayoutParams(dp(52), dp(48)));
@@ -269,13 +255,13 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
         root.addView(header, headerParams);
 
         torchButton = new TorchButtonView(this);
-        torchButton.setContentDescription("Encender o apagar la luz de la cámara trasera");
+        torchButton.setContentDescription(getString(R.string.toggle_torch));
         torchButton.setOnClickListener(v -> toggleTorch());
         FrameLayout.LayoutParams torchParams = new FrameLayout.LayoutParams(
                 dp(64), dp(64), Gravity.LEFT | Gravity.TOP);
         root.addView(torchButton, torchParams);
         photoButton = new PhotoButtonView(this);
-        photoButton.setContentDescription("Elegir una foto guardada para leer un código");
+        photoButton.setContentDescription(getString(R.string.choose_photo));
         photoButton.setOnClickListener(v -> photoPicker.launch("image/*"));
         FrameLayout.LayoutParams photoParams = new FrameLayout.LayoutParams(
                 dp(64), dp(64), Gravity.LEFT | Gravity.TOP);
@@ -305,10 +291,12 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
         future.addListener(() -> {
             try {
                 ProcessCameraProvider provider = future.get();
-                int rotation = getWindowManager().getDefaultDisplay().getRotation();
-                Preview preview = new Preview.Builder().setTargetRotation(rotation).build();
+                int rotation = displayRotation();
+                preview = new Preview.Builder().setTargetRotation(rotation).build();
                 preview.setSurfaceProvider(previewView.getSurfaceProvider());
-                decoder = new DecodeAnalyzer(content -> runOnUiThread(() -> showResult(content)));
+                decoder = new DecodeAnalyzer(content -> runOnUiThread(() -> {
+                    if (!isFinishing() && !isDestroyed()) showResult(content);
+                }));
                 analysis = new ImageAnalysis.Builder()
                         .setTargetRotation(rotation)
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
@@ -322,7 +310,7 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
                     }
                 });
             } catch (Exception error) {
-                Toast.makeText(this, "No fue posible iniciar la cámara.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, getString(R.string.camera_start_failed), Toast.LENGTH_LONG).show();
                 finish();
             }
         }, ContextCompat.getMainExecutor(this));
@@ -331,11 +319,20 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
     private void showResult(@NonNull String content) {
         if (decoder != null) decoder.pause();
         if (camera != null) camera.getCameraControl().enableTorch(false);
-        boolean link = isSafeBrowserLink(content);
-        String classification = link
-                ? getString(R.string.link_detected_message)
-                : getString(R.string.content_detected_message);
-        String displayed = content.length() > 4000 ? content.substring(0, 4000) + "…" : content;
+        LinkSafety.Review link = LinkSafety.review(content);
+        String classification;
+        if (link != null) {
+            classification = getString(R.string.link_detected_message);
+        } else if (LinkSafety.looksLikeWebLink(content)) {
+            classification = getString(R.string.link_not_openable_message);
+        } else {
+            classification = getString(R.string.content_detected_message);
+        }
+        if (PayloadText.containsHiddenCharacters(content)) {
+            classification += "\n\n" + getString(R.string.hidden_characters_notice);
+        }
+        // Hidden characters are shown as markers; Copy still returns the exact payload.
+        String displayed = PayloadText.truncate(PayloadText.revealHiddenCharacters(content), MAX_DISPLAYED_CHARS);
         LinearLayout result = new LinearLayout(this);
         result.setOrientation(LinearLayout.VERTICAL);
         result.setPadding(dp(24), dp(22), dp(24), dp(18));
@@ -363,7 +360,7 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
         TextView value = text(displayed, 17, Color.WHITE);
         value.setTextIsSelectable(true);
         value.setHorizontallyScrolling(false);
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             value.setBreakStrategy(LineBreaker.BREAK_STRATEGY_BALANCED);
             value.setHyphenationFrequency(Layout.HYPHENATION_FREQUENCY_NORMAL);
         }
@@ -379,7 +376,7 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
         result.addView(valuePanel, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        Button primary = button(link ? getString(R.string.review_link) : getString(R.string.copy),
+        Button primary = button(link != null ? getString(R.string.review_link) : getString(R.string.copy),
                 color(R.color.teal), color(R.color.ink));
         LinearLayout.LayoutParams primaryParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(52));
@@ -390,34 +387,44 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
         secondary.setOrientation(LinearLayout.VERTICAL);
         secondary.setGravity(Gravity.CENTER_HORIZONTAL);
         Button scanAgain = outlinedButton(getString(R.string.scan_again));
-        Button copyButton = outlinedButton(getString(R.string.copy));
         secondary.addView(scanAgain, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(48)));
-        LinearLayout.LayoutParams copyParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
-        copyParams.topMargin = dp(8);
-        secondary.addView(copyButton, copyParams);
+        // A second Copy button is only needed when the primary action is the link review.
+        Button copyButton = null;
+        if (link != null) {
+            copyButton = outlinedButton(getString(R.string.copy));
+            LinearLayout.LayoutParams copyParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, dp(48));
+            copyParams.topMargin = dp(8);
+            secondary.addView(copyButton, copyParams);
+        }
         LinearLayout.LayoutParams secondaryParams = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, dp(104));
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         secondaryParams.topMargin = dp(8);
         result.addView(secondary, secondaryParams);
 
         AlertDialog dialog = new AlertDialog.Builder(this).setView(result).create();
         primary.setOnClickListener(v -> {
             dialog.dismiss();
-            if (link) showBrowserConfirmation(content); else copy(content);
+            if (link != null) showBrowserConfirmation(link); else copy(content);
         });
         scanAgain.setOnClickListener(v -> { dialog.dismiss(); resumeScanning(); });
-        copyButton.setOnClickListener(v -> { dialog.dismiss(); copy(content); });
+        if (copyButton != null) copyButton.setOnClickListener(v -> { dialog.dismiss(); copy(content); });
         dialog.setOnCancelListener(d -> resumeScanning());
         dialog.setOnShowListener(ignored -> {
             if (dialog.getWindow() != null) {
                 dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-                int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
-                dialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
+                fitDialogWidth(dialog);
             }
         });
+        track(dialog);
         dialog.show();
+    }
+
+    private void fitDialogWidth(AlertDialog dialog) {
+        if (dialog.getWindow() == null) return;
+        int width = (int) (getResources().getDisplayMetrics().widthPixels * 0.92f);
+        dialog.getWindow().setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT);
     }
 
     private void resumeScanning() {
@@ -426,8 +433,8 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
 
     private void copy(String content) {
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        clipboard.setPrimaryClip(ClipData.newPlainText("Código escaneado", content));
-        Toast.makeText(this, "Copiado en este dispositivo.", Toast.LENGTH_SHORT).show();
+        clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.clipboard_label), content));
+        Toast.makeText(this, getString(R.string.copied), Toast.LENGTH_SHORT).show();
         resumeScanning();
     }
 
@@ -435,34 +442,48 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
         try {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(address)));
         } catch (Exception noHandler) {
-            Toast.makeText(this, "No hay un navegador disponible.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.no_browser), Toast.LENGTH_LONG).show();
         }
         resumeScanning();
     }
 
-    private void showBrowserConfirmation(String address) {
-        new AlertDialog.Builder(this)
+    private void showBrowserConfirmation(LinkSafety.Review link) {
+        // Force left-to-right isolation so right-to-left letters inside the
+        // address cannot visually reorder it in the dialog.
+        BidiFormatter bidi = BidiFormatter.getInstance();
+        StringBuilder message = new StringBuilder(getString(R.string.link_host_label,
+                bidi.unicodeWrap(link.asciiHost, TextDirectionHeuristics.LTR)));
+        if (link.concerns.contains(LinkSafety.Concern.INTERNATIONAL_HOST)) {
+            message.append('\n').append(getString(R.string.link_written_as,
+                    bidi.unicodeWrap(link.displayHost, TextDirectionHeuristics.LTR)));
+        }
+        for (LinkSafety.Concern concern : link.concerns) {
+            message.append("\n\n⚠ ").append(getString(concernText(concern)));
+        }
+        message.append("\n\n").append(getString(R.string.open_link_message,
+                bidi.unicodeWrap(link.address, TextDirectionHeuristics.LTR)));
+        track(new AlertDialog.Builder(this)
                 .setTitle(R.string.open_link_title)
-                .setMessage(getString(R.string.open_link_message, address))
+                .setMessage(message.toString())
                 .setNegativeButton(R.string.cancel, (dialog, which) -> resumeScanning())
-                .setPositiveButton(R.string.open_browser, (dialog, which) -> openInBrowser(address))
+                .setPositiveButton(R.string.open_browser, (dialog, which) -> openInBrowser(link.address))
                 .setOnCancelListener(dialog -> resumeScanning())
-                .show();
+                .show());
     }
 
-    private boolean isSafeBrowserLink(String value) {
-        // Keep the destination bounded so that a person can meaningfully review
-        // the complete value in the confirmation dialog before it is delegated.
-        if (value.length() > 2048) return false;
-        Uri uri = Uri.parse(value);
-        String scheme = uri.getScheme();
-        return ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))
-                && uri.getHost() != null && !uri.getHost().isEmpty();
+    private static int concernText(LinkSafety.Concern concern) {
+        switch (concern) {
+            case PLAIN_HTTP: return R.string.concern_plain_http;
+            case TEXT_BEFORE_AT: return R.string.concern_text_before_at;
+            case INTERNATIONAL_HOST: return R.string.concern_international_host;
+            case NUMERIC_HOST: return R.string.concern_numeric_host;
+            default: throw new IllegalArgumentException("Unhandled concern: " + concern);
+        }
     }
 
     private void toggleTorch() {
         if (camera == null || !camera.getCameraInfo().hasFlashUnit()) {
-            Toast.makeText(this, "Esta cámara no tiene luz auxiliar.", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.no_torch), Toast.LENGTH_SHORT).show();
             return;
         }
         boolean enabled = camera.getCameraInfo().getTorchState().getValue() != null
@@ -475,6 +496,7 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
         ProcessCameraProvider.getInstance(this).addListener(() -> {
             try { ProcessCameraProvider.getInstance(this).get().unbindAll(); } catch (Exception ignored) { }
         }, ContextCompat.getMainExecutor(this));
+        preview = null;
         analysis = null;
         camera = null;
         decoder = null;
@@ -482,19 +504,25 @@ public final class MainActivity extends androidx.activity.ComponentActivity {
 
     @Override
     protected void onDestroy() {
+        if (activeDialog != null && activeDialog.isShowing()) activeDialog.dismiss();
+        activeDialog = null;
         stopCamera();
         analysisExecutor.shutdown();
         super.onDestroy();
     }
 
-    private LinearLayout panel() {
-        LinearLayout panel = new LinearLayout(this);
-        GradientDrawable background = new GradientDrawable();
-        background.setColor(0xE6153136);
-        background.setCornerRadius(dp(24));
-        background.setStroke(dp(1), 0x4D8DE5D0);
-        panel.setBackground(background);
-        return panel;
+    /** Remembers the visible dialog so it can be resized on rotation and dismissed on exit. */
+    private void track(AlertDialog dialog) {
+        activeDialog = dialog;
+    }
+
+    @SuppressWarnings("deprecation")
+    private int displayRotation() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            android.view.Display display = getDisplay();
+            if (display != null) return display.getRotation();
+        }
+        return getWindowManager().getDefaultDisplay().getRotation();
     }
 
     private Button button(String label, int backgroundColor, int textColor) {

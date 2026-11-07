@@ -25,4 +25,5 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - run: bash scripts/verify-privacy.sh
       - run: ./gradlew --no-daemon :app:testDebugUnitTest :app:assembleRelease :app:lintVitalRelease
