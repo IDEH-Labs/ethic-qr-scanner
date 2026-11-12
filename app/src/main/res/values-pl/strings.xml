@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ethic QR Scanner</string>
+    <string name="camera_permission_explanation">Kamera jest używana tylko wtedy, gdy zdecydujesz się zeskanować kod. Obrazy i odczytana zawartość pozostają na tym urządzeniu.</string>
+    <string name="camera_unavailable">To urządzenie nie ma dostępnej kamery.</string>
+    <string name="permission_needed">Do zeskanowania kodu wymagany jest dostęp do kamery.</string>
+    <string name="retry_camera">Spróbuj ponownie</string>
+    <string name="close">Zamknij</string>
+    <string name="scan_again">Skanuj ponownie</string>
+    <string name="copy">Kopiuj</string>
+    <string name="cancel">Anuluj</string>
+    <string name="open_browser">Otwórz przeglądarkę</string>
+    <string name="review_link">Sprawdź link</string>
+    <string name="open_link_title">Otworzyć link zewnętrzny?</string>
+    <string name="open_link_message">Sprawdź pełny adres docelowy, zanim przejdziesz dalej. Ta aplikacja nie sprawdza online reputacji ani bezpieczeństwa witryny.\n\nPrzeglądarka otrzyma:\n%1$s</string>
+    <string name="content_detected_title">Wykryto zawartość</string>
+    <string name="link_detected_message">Wykryto link. Jest tutaj nieaktywny; sprawdź pełny adres docelowy, zanim zdecydujesz, czy otworzyć go w przeglądarce.</string>
+    <string name="content_detected_message">Wykryto zawartość. Możesz ją skopiować; nie zostanie wysłana poza ten telefon.</string>
+    <string name="reading_photo">Odczytywanie wybranego zdjęcia lokalnie…</string>
+    <string name="no_code_title">Nie wykryto kodu</string>
+    <string name="no_code_message">Na tym zdjęciu nie znaleziono obsługiwanego kodu QR ani kodu kreskowego. Obraz nie został zapisany.</string>
+    <string name="transparency_dialog_title">O aplikacji i prywatność</string>
+    <string name="transparency_dialog_message">Uprawnienie: CAMERA jest wymagane po otwarciu skanera, ponieważ jest niezbędne do działania głównej funkcji.\n\nDane: klatki obrazu i odczytana zawartość pozostają w pamięci tego telefonu. Nie ma konta, śledzenia, reklam, uprawnienia do sieci ani historii skanowania.\n\nLinki: link HTTP(S) jest wyświetlany jako nieaktywny tekst. Jego otwarcie wymaga osobnego potwierdzenia, które pokazuje pełny adres docelowy. Aplikacja nie twierdzi, że weryfikuje bezpieczeństwo witryny.\n\nLicencja: oryginalny kod aplikacji jest na licencji GPL-3.0-or-later. CameraX/AndroidX i ZXing Core są wymienione w informacjach w kodzie źródłowym.</string>
+
+    <!-- Menu & Projects -->
+    <string name="menu_title">O nas</string>
+    <string name="ecosystem_section">Projekty</string>
+    <string name="ecosystem_desc">Suwerenne, offline'owe aplikacje copyleft stawiające prywatność na pierwszym miejscu, tworzone przez IDEH Labs.</string>
+    <string name="app_installed">Zainstalowano</string>
+    <string name="app_open">Otwórz</string>
+    <string name="app_view">Zobacz</string>
+    <string name="open_source_section">Suwerenność &amp; kod źródłowy</string>
+    <string name="github_repo_label">Repozytorium GitHub</string>
+    <string name="gitlab_repo_label">Repozytorium GitLab</string>
+    <string name="license_label">Licencja GNU GPLv3</string>
+    <string name="license_desc">Ścisły copyleft. Możesz swobodnie uruchamiać, badać, udostępniać i modyfikować.</string>
+    <string name="technical_info_section">Integralność techniczna</string>
+    <string name="package_id_label">Identyfikator pakietu</string>
+    <string name="key_fingerprint_label">Certyfikat podpisującego (SHA-256)</string>
+    <string name="qr_badge">100% offline · Zero trackerów</string>
+    <string name="done">Gotowe</string>
+</resources>
